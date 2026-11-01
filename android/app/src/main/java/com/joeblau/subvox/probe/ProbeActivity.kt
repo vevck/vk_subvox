@@ -140,7 +140,14 @@ class ProbeActivity : Activity(), SensorEventListener {
             val t = tracker
             if (t == null) {
                 appendLine("No TYPE_HEAD_TRACKER sensor visible to this app.")
-                appendLine("Check: buds connected, Settings › Connected devices › Pixel Buds › Spatial Audio › Head tracking on.")
+                if (spatializer.isHeadTrackerAvailable) {
+                    // SensorService hides head trackers from non-system apps unless lifted from adb.
+                    appendLine("The system sees a head tracker, but Android hides it from apps by default.")
+                    appendLine("Lift the restriction from a computer (lasts until reboot), then tap Refresh sensors:")
+                    appendLine("  adb shell cmd sensorservice unrestrict-ht")
+                } else {
+                    appendLine("Check: buds connected, Settings › Connected devices › Pixel Buds › Spatial Audio › Head tracking on.")
+                }
             } else {
                 appendLine("HEAD TRACKER: ${t.name}")
                 appendLine("  vendor=${t.vendor} version=${t.version} id=${t.id} dynamic=${t.isDynamicSensor}")

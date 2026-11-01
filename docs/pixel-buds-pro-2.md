@@ -25,11 +25,26 @@ What this means for decoding:
 - **Segmentation still works**. `MotionFeatures.energy` is `|ω| + 5·|a|`, so with `a = 0` it reduces to rotation magnitude. The noise floor gets calibrated per device either way.
 - **Re-centring has to be handled.** The head tracker can reset its reference frame, which would make attitude jump in the middle of a word. `HeadTrackerConverter` re-bases the orientation so it stays continuous and flags the event. `CaptureController.cancel()` lets the app drop a segment that is in progress when that happens.
 
+## Finding: Android hides the head tracker from apps
+
+On a Pixel 8 Pro with Pixel Buds Pro 2, head tracking enabled, the probe reports `Spatializer head tracker available: true` but **0 dynamic sensors**. The buds' tracker is connected, but apps can't see it. This is deliberate. In AOSP `SensorService::canAccessSensor`, `TYPE_HEAD_TRACKER` is "restricted to system usage only, unless the restriction is specially lifted for testing", and `Sensor.STRING_TYPE_HEAD_TRACKER` documents it as "typically not available for apps to use".
+
+The restriction can be lifted from adb, which holds `MANAGE_SENSORS`. No root is needed:
+
+```sh
+adb shell cmd sensorservice unrestrict-ht   # lasts until reboot
+adb shell cmd sensorservice restrict-ht     # put it back
+```
+
+What this means:
+- **Research use works.** The phone must be tethered to a computer once per boot to run the command.
+- **A Play Store app can't do this.** No permission a normal app can request unlocks the sensor. Shipping it would need a supported API from Google, a privileged (system or root) install, or reverse-engineering the buds' own Bluetooth protocol.
+
 ## Unknowns the probe app resolves
 
 These can only be answered on real hardware. They decide whether the port is worth the effort:
 
-1. **Is the sensor visible to a third-party app?** The HID protocol is aimed at the audio spatializer. Whether `SensorManager.getDynamicSensorList(TYPE_HEAD_TRACKER)` returns it to an ordinary app on a given Pixel or firmware version has to be checked. If it doesn't, there's no supported route and the project stops here, or turns into reverse-engineering the buds' Bluetooth protocol.
+1. ~~**Is the sensor visible to a third-party app?**~~ Answered: not by default. See above. Originally: The HID protocol is aimed at the audio spatializer. Whether `SensorManager.getDynamicSensorList(TYPE_HEAD_TRACKER)` returns it to an ordinary app on a given Pixel or firmware version has to be checked. If it doesn't, there's no supported route and the project stops here, or turns into reverse-engineering the buds' Bluetooth protocol.
 2. **Does it need Spatial Audio / Head tracking turned on** in the buds' Bluetooth settings? Does it stream when no audio is playing?
 3. **Sample rate and latency.** Faster than ~25 Hz would help, since articulation is fast.
 4. **Smoothing.** Pose that's tuned for spatial audio may be low-pass filtered so heavily that jaw micro-motion is gone.
