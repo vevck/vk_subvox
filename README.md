@@ -55,3 +55,7 @@ The training set lives at `~/Library/Application Support/Subvox/dataset.json`.
 - Headphone motion is processed and low-rate (roughly 25 Hz on AirPods). The speech-detecting accelerometer and the inward mic are not exposed. Expect jaw and head movement, not vocal vibration.
 - Templates are user- and session-specific. Re-seating the AirPods can shift the signal.
 - Choosing AirPods as the mic input switches them to the Bluetooth headset (HFP) profile.
+
+## Pixel Buds Pro 2 / Android
+
+There's an Android port in progress under [`android/`](android/). It has a unit-tested Kotlin decoder core and a feasibility probe app that reads the buds through Android's `TYPE_HEAD_TRACKER` sensor. Pixel Buds don't report acceleration, so only the rotation and attitude features apply. See [docs/pixel-buds-pro-2.md](docs/pixel-buds-pro-2.md) for the analysis and plan.
